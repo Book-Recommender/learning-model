@@ -31,7 +31,7 @@ class RecommenderPipeline:
     def load_data(self,df):
         reader= Reader(rating_scale=self.rating_scale)
         data = Dataset.load_from_df(df[Feature_List],reader)
-        self.trainset, self.testset = train_test_split(data,test_size=0.2)
+        self.trainset, self.testset = train_test_split(data,test_size=0.2,random_state=42)
         
          # train model, and raise error if dataset is not provided yet
     def train(self):
@@ -61,3 +61,31 @@ class RecommenderPipeline:
     
         recommendations.sort(key=lambda x: x[1], reverse=True)
         return recommendations[:num_recommendations]        
+    
+
+
+# Create Model
+
+recommender = RecommenderPipeline()
+
+# Load data into the pipeline
+recommender.load_data(user_rating_books_ds)
+
+# Train the model
+recommender.train()
+
+#Evaluate Model
+recommender.evaluate()
+
+recommender.trainset.all_users()
+
+
+
+users_in_trainset=recommender.trainset.all_users()
+user_ex=recommender.trainset.to_raw_uid(24)
+
+# Get recommendations for a user
+recommendations = recommender.recommend(user_ex, 50)
+print(f"Recommendations for {user_ex}: {recommendations}")
+
+pd.DataFrame(recommendations)
