@@ -15,6 +15,7 @@ user_rating_books_ds = pd.merge(user_rating_ds,books_data,on='ISBN')
 Feature_List=["User-ID","Book-Title","Book-Rating"]
 user_rating_books_ds = user_rating_books_ds[Feature_List]
 
+
 #Encapsulate Model in classs called "RecommenderPipeline"
 
 class RecommenderPipeline:
