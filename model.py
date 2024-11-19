@@ -48,5 +48,16 @@ class RecommenderPipeline:
         
         return rmse
        
-
-            
+     # This function creates k recommendations for a given user 
+    def recommend(self,user_id,num_recommendations):
+        user_ratings = self.trainset.ur[self.trainset.to_inner_uid(user_id)]
+        all_items = set(self.trainset.all_items())
+        rated_items = set(item for item, _ in user_ratings)
+        unrated_items = all_items - rated_items
+        
+        
+        recommendations = [(self.trainset.to_raw_iid(item), self.model.predict(user_id, self.trainset.to_raw_iid(item)).est)
+            for item in unrated_items]
+    
+        recommendations.sort(key=lambda x: x[1], reverse=True)
+        return recommendations[:num_recommendations]        
