@@ -66,12 +66,23 @@ class RecommenderPipeline:
     
         # For users with no previous data, recommend a random list of books by taking a proportion of books within each rating range
     def cold_recommend(self, num_recommendations):
+        
         fours = average_ratings.loc[average_ratings['Rating'] >= 4.0]   # 5%
-        fives = fours.loc[fours['Rating'] >= 5.0]                       # 10%
-        sixes = fives.loc[fives['Rating'] >= 6.0]                       # 10%
-        sevens = sixes.loc[sixes['Rating'] >= 7.0]                      # 15%
-        eights = sevens.loc[sevens['Rating'] >= 8.0]                    # 25%
-        nines = eights.loc[eights['Rating'] >= 9.0]                     # 35%
+        fours = fours.loc[fours['Rating'] < 5.0]
+        
+        fives = average_ratings.loc[average_ratings['Rating'] >= 5.0]   # 10%
+        fives = fives.loc[fives['Rating'] < 6.0]
+        
+        sixes = average_ratings.loc[average_ratings['Rating'] >= 6.0]   # 10%
+        sixes = sixes.loc[sixes['Rating'] < 7.0]
+        
+        sevens = average_ratings.loc[average_ratings['Rating'] >= 7.0]  # 15%
+        sevens = sevens.loc[sevens['Rating'] < 8.0]
+        
+        eights = average_ratings.loc[average_ratings['Rating'] >= 8.0]  # 25%
+        eights = eights.loc[eights['Rating'] < 9.0]
+        
+        nines = average_ratings.loc[average_ratings['Rating'] >= 9.0]   # 35%
         
         #Take a random sample of each sub-dataset of size num_recommendations
         fours = fours.sample(n = num_recommendations)
@@ -89,8 +100,10 @@ class RecommenderPipeline:
         eights = eights.sample(frac=0.25)
         nines = nines.sample(frac=0.35)
         
-        #Merge sub-datasets and return final result
+        #Merge sub-datasets, shuffle final dataset, and return final result
         final_df = pd.concat([fours, fives, sixes, sevens, eights, nines], axis = 0)
+        final_df = final_df.sample(frac = 1)
+        final_df = final_df.reset_index(drop=True)
         return final_df
 
 # # Create Model
