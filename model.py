@@ -16,6 +16,7 @@ Feature_List=["User-ID","Book-Title","Book-Rating"]
 books_ID_list = user_rating_books_ds[["Book-Title", "ISBN"]]
 user_rating_books_ds = user_rating_books_ds[Feature_List]
 
+average_ratings = pd.read_csv("./data/average_ratings.csv.gz", delimiter = '\t', index_col = 0)
 
 #Encapsulate Model in classs called "RecommenderPipeline"
 
@@ -50,7 +51,7 @@ class RecommenderPipeline:
         
         return rmse
        
-     # This function creates k recommendations for a given user 
+        # This function creates k recommendations for a given user 
     def recommend(self,user_id,num_recommendations):
         user_ratings = self.trainset.ur[self.trainset.to_inner_uid(user_id)]
         all_items = set(self.trainset.all_items())
@@ -61,9 +62,36 @@ class RecommenderPipeline:
             for item in unrated_items]
     
         recommendations.sort(key=lambda x: x[1], reverse=True)
-        return recommendations[:num_recommendations]        
+        return recommendations[:num_recommendations]     
     
-
+        # For users with no previous data, recommend a random list of books by taking a proportion of books within each rating range
+    def cold_recommend(self, num_recommendations):
+        fours = average_ratings.loc[average_ratings['Rating'] >= 4.0]   # 5%
+        fives = fours.loc[fours['Rating'] >= 5.0]                       # 10%
+        sixes = fives.loc[fives['Rating'] >= 6.0]                       # 10%
+        sevens = sixes.loc[sixes['Rating'] >= 7.0]                      # 15%
+        eights = sevens.loc[sevens['Rating'] >= 8.0]                    # 25%
+        nines = eights.loc[eights['Rating'] >= 9.0]                     # 35%
+        
+        #Take a random sample of each sub-dataset of size num_recommendations
+        fours = fours.sample(n = num_recommendations)
+        fives = fives.sample(n = num_recommendations)
+        sixes = sixes.sample(n = num_recommendations)
+        sevens = sevens.sample(n = num_recommendations)
+        eights = eights.sample(n = num_recommendations)
+        nines = nines.sample(n = num_recommendations)
+            
+        #Taking the proportions of each sub-dataset. Unseeded to ensure different results each time
+        fours = fours.sample(frac=0.05)
+        fives = fives.sample(frac=0.10)
+        sixes = sixes.sample(frac=0.10)
+        sevens = sevens.sample(frac=0.15)
+        eights = eights.sample(frac=0.25)
+        nines = nines.sample(frac=0.35)
+        
+        #Merge sub-datasets and return final result
+        final_df = pd.concat([fours, fives, sixes, sevens, eights, nines], axis = 0)
+        return final_df
 
 # # Create Model
 
@@ -79,8 +107,6 @@ class RecommenderPipeline:
 # recommender.evaluate()
 
 # recommender.trainset.all_users()
-
-
 
 # users_in_trainset=recommender.trainset.all_users()
 # user_ex=recommender.trainset.to_raw_uid(24)
