@@ -13,6 +13,7 @@ user_rating_ds = pd.merge(user_data,rating_data,on='User-ID')
 user_rating_books_ds = pd.merge(user_rating_ds,books_data,on='ISBN')
 
 Feature_List=["User-ID","Book-Title","Book-Rating"]
+books_ID_list = user_rating_books_ds[["Book-Title", "ISBN"]]
 user_rating_books_ds = user_rating_books_ds[Feature_List]
 
 
@@ -56,7 +57,6 @@ class RecommenderPipeline:
         rated_items = set(item for item, _ in user_ratings)
         unrated_items = all_items - rated_items
         
-        
         recommendations = [(self.trainset.to_raw_iid(item), self.model.predict(user_id, self.trainset.to_raw_iid(item)).est)
             for item in unrated_items]
     
@@ -65,28 +65,26 @@ class RecommenderPipeline:
     
 
 
-# Create Model
+# # Create Model
 
-recommender = RecommenderPipeline()
+# recommender = RecommenderPipeline()
 
-# Load data into the pipeline
-recommender.load_data(user_rating_books_ds)
+# # Load data into the pipeline
+# recommender.load_data(user_rating_books_ds)
 
-# Train the model
-recommender.train()
+# # Train the model
+# recommender.train()
 
-#Evaluate Model
-recommender.evaluate()
+# #Evaluate Model
+# recommender.evaluate()
 
-recommender.trainset.all_users()
+# recommender.trainset.all_users()
 
 
 
-users_in_trainset=recommender.trainset.all_users()
-user_ex=recommender.trainset.to_raw_uid(24)
+# users_in_trainset=recommender.trainset.all_users()
+# user_ex=recommender.trainset.to_raw_uid(24)
 
-# Get recommendations for a user
-recommendations = recommender.recommend(user_ex, 50)
-print(f"Recommendations for {user_ex}: {recommendations}")
-
-pd.DataFrame(recommendations)
+# # Get recommendations for a user
+# recommendations = recommender.recommend(user_ex, 50)
+# print(f"Recommendations for {user_ex}: {recommendations}")
