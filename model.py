@@ -34,7 +34,7 @@ class RecommenderPipeline:
     def load_data(self,df):
         reader= Reader(rating_scale=self.rating_scale)
         data = Dataset.load_from_df(df[Feature_List],reader)
-        self.trainset, self.testset = train_test_split(data,test_size=0.2,random_state=42)
+        self.trainset, self.testset = train_test_split(data,test_size=0.2)
         
          # train model, and raise error if dataset is not provided yet
     def train(self):
@@ -62,11 +62,16 @@ class RecommenderPipeline:
             for item in unrated_items]
     
         recommendations.sort(key=lambda x: x[1], reverse=True)
-        return recommendations[:num_recommendations]     
+        recommendations = recommendations[:num_recommendations]   
+
+        #Adds ISBN and returns recommendation dataframe 
+        recommendations = pd.DataFrame(recommendations)
+        recommendations = pd.concat([recommendations, pd.DataFrame(books_ID_list['ISBN'])], join = 'inner', axis = 1)
+        recommendations = recommendations.rename(columns = {0 : "Book-Title", 1: "Rating"})
+        return recommendations
     
         # For users with no previous data, recommend a random list of books by taking a proportion of books within each rating range
-    def cold_recommend(self, num_recommendations):
-        
+    def cold_recommend(self, num_recommendations): 
         fours = average_ratings.loc[average_ratings['Rating'] >= 4.0]   # 5%
         fours = fours.loc[fours['Rating'] < 5.0]
         
@@ -105,6 +110,32 @@ class RecommenderPipeline:
         final_df = final_df.sample(frac = 1)
         final_df = final_df.reset_index(drop=True)
         return final_df
+
+def book_recommendations(num_recommendations):
+    
+    # Create Model
+    recommender = RecommenderPipeline()
+    
+    #If there is no user data, then use cold_recommend()
+    #For now, since data cannot be pulled directly from database, a simple boolean is used here
+    is_data = True
+    
+    if not is_data:
+        return recommender.cold_recommend(num_recommendations)
+    
+    # Load book data into the pipeline if there is user data
+    recommender.load_data(user_rating_books_ds)
+
+    # Train the model
+    recommender.train()
+
+    user_ex=recommender.trainset.to_raw_uid(24)
+
+    # Get recommendations for a user
+    return recommender.recommend(user_ex, num_recommendations)
+        
+
+
 
 # # Create Model
 
