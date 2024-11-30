@@ -51,13 +51,13 @@ class RecommenderPipeline:
 
     # This function creates k recommendations for a given user 
     def recommend(self,user_id, num_recommendations = 20):
-        reduced_matrix = self.model.fit_transform(self.interaction_matrix)
         
-        all_items = set(zip(*self.train_data.nonzero()))
-        rated_items = set(item for item in reduced_matrix)
-        unrated_items = all_items - rated_items
+        predicted_ratings = self.model.singular_values_
+        user_index = self.interaction_matrix.getrow(user_id)
+        user_ratings = predicted_ratings[user_index]
+        item_indices = np.argsort(user_ratings)[::-1][:num_recommendations]
         
-        recommendations = [(item, self.interaction_matrix[user_id, item]) for item in unrated_items]
+        recommendations = self.interaction_matrix.columns[item_indices]
     
         recommendations.sort(key=lambda x: x[1], reverse=True)
         recommendations = recommendations[:num_recommendations]   
