@@ -18,7 +18,6 @@ user_rating_books_ds = user_rating_books_ds[Feature_List]
 
 average_ratings = pd.read_csv("./data/average_ratings.csv.gz", delimiter = '\t', index_col = 0)
 
-
 class RecommenderPipeline:
     #Encodes data and creates user-item matrix
     def __init__(self):
@@ -51,14 +50,12 @@ class RecommenderPipeline:
         self.model.fit(self.train_data)
 
     # This function creates k recommendations for a given user 
-    def recommend(self,user_id,num_recommendations):
-        user_ratings = self.trainset.ur[self.trainset.to_inner_uid(user_id)]
-        all_items = set(self.trainset.all_items())
-        rated_items = set(item for item, _ in user_ratings)
+    def recommend(self,user_id, num_recommendations = 20):
+        all_items = set(zip(*self.train_data.nonzero()))
+        rated_items = set(item for item in self.train_data) #FIX THIS
         unrated_items = all_items - rated_items
         
-        recommendations = [(self.trainset.to_raw_iid(item), self.model.predict(user_id, self.trainset.to_raw_iid(item)).est)
-            for item in unrated_items]
+        recommendations = [(item, self.interaction_matrix[user_id, item]) for item in all_items]
     
         recommendations.sort(key=lambda x: x[1], reverse=True)
         recommendations = recommendations[:num_recommendations]   
@@ -70,7 +67,7 @@ class RecommenderPipeline:
         return recommendations
 
     #For users with no previous data, recommend a random list of books by taking a proportion of books within each rating range
-    def cold_recommend(self, num_recommendations): 
+    def cold_recommend(self, num_recommendations = 20): 
         fours = average_ratings.loc[average_ratings['Rating'] >= 4.0]   # 5%
         fours = fours.loc[fours['Rating'] < 5.0]
         
@@ -109,8 +106,10 @@ class RecommenderPipeline:
         final_df = final_df.sample(frac = 1)
         final_df = final_df.reset_index(drop=True)
         return final_df
+    
+recommender = RecommenderPipeline()
+recommender.fit()
 
+a = recommender.recommend(1, 50)
 
-#user_id = 10
-#num_recommendations = 20
-#print(f"Recommendations for User {user_id}: {recommend(user_id, num_recommendations)}")
+print(a['ISBN'])

@@ -36,7 +36,7 @@ class RecommenderPipeline:
         data = Dataset.load_from_df(df[Feature_List],reader)
         self.trainset, self.testset = train_test_split(data,test_size=0.2)
         
-         # train model, and raise error if dataset is not provided yet
+        # train model, and raise error if dataset is not provided yet
     def train(self):
         if not self.trainset:
             raise ValueError("No training data found. Please load data first with load_data function.")
