@@ -35,14 +35,13 @@ train_size = int(interaction_matrix.shape[0] * train_ratio)
 train_data = interaction_matrix[:train_size].astype(np.float32)
 test_data = interaction_matrix[train_size:].astype(np.float32)
 
-# Train SVD model using Scikit-learn's TruncatedSVD
 svd = TruncatedSVD(n_components=50, random_state=42)
 svd.fit(train_data)
 
-# Evaluate the model
 train_reconstruction = svd.inverse_transform(svd.transform(train_data))
 print(train_reconstruction.shape)
 
+# Evaluation 
 #rmse = np.sqrt(mean_squared_error(train_data.toarray(), train_reconstruction))
 #print(f"Train RMSE: {rmse}")
 
