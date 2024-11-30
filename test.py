@@ -22,7 +22,7 @@ class RecommenderPipeline:
     #Encodes data and creates user-item matrix
     def __init__(self):
         self.user_rating = user_rating_books_ds
-        self.model = TruncatedSVD(n_components=50)
+        self.model = TruncatedSVD(n_components=2)
         self.train_data = None
         self.test_data = None
         # Encode users and books
@@ -33,10 +33,10 @@ class RecommenderPipeline:
         self.user_rating.loc[:, "Book-Title"] = book_encoder.fit_transform(self.user_rating["Book-Title"]).astype(np.int32)
         self.user_rating.loc[:, "Book-Rating"] = self.user_rating["Book-Rating"].astype(np.int8)
 
-        # Create user-item interaction matrix
+        # Create Book/Title interaction matrix
         self.interaction_matrix = csr_matrix(
             (user_rating_books_ds["Book-Rating"],
-            (user_rating_books_ds["User-ID"], user_rating_books_ds["Book-Title"]))
+            (user_rating_books_ds["Book-Title"]))
         )
         
     #Test/Train splits data and trains model using train data
@@ -51,8 +51,15 @@ class RecommenderPipeline:
 
     # This function creates k recommendations for a given user 
     def recommend(self,user_id, num_recommendations = 20):
+        reduced_matrix = self.model.fit_transform(self.interaction_matrix)
+        predicted_ratings = reduced_matrix.dot(self.model.components_)
+
+
+        # Step 2: Reconstruct the matrix
+        reconstructed_matrix = np.dot(user_features, item_features)
+        
         all_items = set(zip(*self.train_data.nonzero()))
-        rated_items = set(item for item in self.train_data) #FIX THIS
+        rated_items = set(item for item in self.train_data)
         unrated_items = all_items - rated_items
         
         recommendations = [(item, self.interaction_matrix[user_id, item]) for item in all_items]
@@ -110,6 +117,6 @@ class RecommenderPipeline:
 recommender = RecommenderPipeline()
 recommender.fit()
 
-a = recommender.recommend(1, 50)
+a = recommender.recommend(0)
 
-print(a['ISBN'])
+print(a['Rating'])
