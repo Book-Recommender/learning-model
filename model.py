@@ -133,7 +133,7 @@ def book_recommendations(num_recommendations):
 
     # Get recommendations for a user
     return recommender.recommend(user_ex, num_recommendations)
-        
+
 
 
 
