@@ -33,7 +33,7 @@ class RecommenderPipeline:
         self.user_rating.loc[:, "Book-Title"] = book_encoder.fit_transform(self.user_rating["Book-Title"]).astype(np.int32)
         self.user_rating.loc[:, "Book-Rating"] = self.user_rating["Book-Rating"].astype(np.int8)
 
-        # Create Book/Title interaction matrix
+        # Create Title/Rating interaction matrix
         self.interaction_matrix = csr_matrix(
             (user_rating_books_ds["Book-Rating"],
             (user_rating_books_ds["Book-Title"]))
