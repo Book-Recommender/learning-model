@@ -36,7 +36,7 @@ class RecommenderPipeline:
         # Create Title/Rating interaction matrix
         self.interaction_matrix = csr_matrix(
             (user_rating_books_ds["Book-Rating"],
-            (user_rating_books_ds["Book-Title"]))
+            (user_rating_books_ds["User-ID"], user_rating_books_ds["Book-Title"]))
         )
         
     #Test/Train splits data and trains model using train data
@@ -52,10 +52,9 @@ class RecommenderPipeline:
     # This function creates k recommendations for a given user 
     def recommend(self,user_id, num_recommendations = 20):
         reduced_matrix = self.model.fit_transform(self.interaction_matrix)
-        predicted_ratings = reduced_matrix.dot(self.model.components_)
         
         all_items = set(zip(*self.train_data.nonzero()))
-        rated_items = set(item for item in self.train_data)
+        rated_items = set(item for item in reduced_matrix)
         unrated_items = all_items - rated_items
         
         recommendations = [(item, self.interaction_matrix[user_id, item]) for item in unrated_items]
