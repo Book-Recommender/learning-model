@@ -53,16 +53,12 @@ class RecommenderPipeline:
     def recommend(self,user_id, num_recommendations = 20):
         reduced_matrix = self.model.fit_transform(self.interaction_matrix)
         predicted_ratings = reduced_matrix.dot(self.model.components_)
-
-
-        # Step 2: Reconstruct the matrix
-        reconstructed_matrix = np.dot(user_features, item_features)
         
         all_items = set(zip(*self.train_data.nonzero()))
         rated_items = set(item for item in self.train_data)
         unrated_items = all_items - rated_items
         
-        recommendations = [(item, self.interaction_matrix[user_id, item]) for item in all_items]
+        recommendations = [(item, self.interaction_matrix[user_id, item]) for item in unrated_items]
     
         recommendations.sort(key=lambda x: x[1], reverse=True)
         recommendations = recommendations[:num_recommendations]   
