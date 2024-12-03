@@ -115,3 +115,62 @@ recommender.fit()
 a = recommender.recommend(0)
 
 print(a['Rating'])
+
+# New is the new code
+
+
+# This is the new stuff
+from sklearn.model_selection import train_test_split
+
+# Flatten sparse matrix to 1d array in order to split data into training and testing sets more comprehensively
+non_zero_indices = np.transpose(interaction_matrix.nonzero()) 
+ratings = interaction_matrix[non_zero_indices[:, 0], non_zero_indices[:, 1]].A1  
+
+train_indices, test_indices = train_test_split(range(len(ratings)), test_size=0.2, random_state=42)
+
+train_matrix = interaction_matrix.copy()
+test_matrix = interaction_matrix.copy()
+
+for index in test_indices:
+    train_matrix[non_zero_indices[index][0], non_zero_indices[index][1]] = 0
+
+
+ # Run SVD Algorithm
+svd = TruncatedSVD(n_components=2, random_state=42)  
+user_factors = svd.fit_transform(train_matrix)
+item_factors = svd.components_
+
+predicted_matrix = np.dot(user_factors, item_factors)
+
+
+# Collect test ratings and predictions
+test_ratings = []
+predicted_ratings = []
+
+for index in test_indices:
+    user_idx, item_idx = non_zero_indices[index]
+    test_ratings.append(interaction_matrix[user_idx, item_idx])
+    predicted_ratings.append(predicted_matrix[user_idx, item_idx])
+
+# Compute RMSE
+rmse = np.sqrt(mean_squared_error(test_ratings, predicted_ratings))
+print(f"\nRoot Mean Squared Error (RMSE): {rmse:.4f}")
+
+
+def get_top_n_recommendations(predicted_matrix, user_index, top_n=3):
+    
+    
+    # Get the predicted ratings for the user (user_index)
+    user_predictions = predicted_matrix[user_index, :]
+    
+    # Recursively find and select the indices of the top N items (highest predicted ratings)
+    top_n_items = np.argsort(user_predictions)[::-1][:top_n]
+    decoded_categories = book_encoder.inverse_transform(top_n_items)
+    
+    return decoded_categories
+
+# Example: Get the top 3 recommended items for User 1 (user_index=0)
+user_index = 10871  # User 1
+top_n_recommendations = get_top_n_recommendations(predicted_matrix, user_index, top_n=3)
+
+print(f"Top 3 recommended items for User {user_index}: {top_n_recommendations}")
