@@ -26,7 +26,7 @@ class RecommenderPipeline:
         self.iteraction_matrix = None
         
         # Encode users and books
-        user_rating = user_rating_books_ds
+        user_rating = user_rating_books_ds.sample(frac=0.25)
         user_encoder = LabelEncoder()
         book_encoder = LabelEncoder()
         
