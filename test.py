@@ -23,8 +23,10 @@ class RecommenderPipeline:
     def __init__(self):
         self.user_rating = user_rating_books_ds
         self.model = TruncatedSVD(n_components=2)
-        self.train_data = None
-        self.test_data = None
+        self.non_zero_indices = None
+        self.train_matrix = None
+        self.predicted_ratings = None
+        
         # Encode users and books
         user_encoder = LabelEncoder()
         book_encoder = LabelEncoder()
@@ -41,31 +43,44 @@ class RecommenderPipeline:
         
     #Test/Train splits data and trains model using train data
     def fit(self):
-        # Train-test split
-        train_ratio = 0.8
-        train_size = int(self.interaction_matrix.shape[0] * train_ratio)
-        self.train_data = self.interaction_matrix[:train_size].astype(np.float32)
-        self.test_data = self.interaction_matrix[train_size:].astype(np.float32)
+        self.non_zero_indices = np.transpose(self.interaction_matrix.nonzero()) 
+        ratings = interaction_matrix[non_zero_indices[:, 0], non_zero_indices[:, 1]].A1  
+        train_indices, test_indices = train_test_split(range(len(ratings)), test_size=0.2, random_state=42)
         
-        self.model.fit(self.train_data)
+        self.train_matrix = interaction_matrix.copy()
+        test_matrix = interaction_matrix.copy()
 
-    # This function creates k recommendations for a given user 
+        for index in self.test_indices:
+            self.train_matrix[self.non_zero_indices[index][0], self.non_zero_indices[index][1]] = 0
+            
+        user_factors = self.model.fit_transform(self.train_matrix)
+        item_factors = self.model.components_
+
+        predicted_matrix = np.dot(user_factors, item_factors)
+        
+        # Collect test ratings and predictions
+        test_ratings = []
+        self.predicted_ratings = []
+
+        for index in test_indices:
+            user_idx, item_idx = self.non_zero_indices[index]
+            test_ratings.append(self.interaction_matrix[user_idx, item_idx])
+            predicted_ratings.append(self.predicted_matrix[user_idx, item_idx])
+
+    #This function creates num_recommendations recommendations for a given user 
     def recommend(self,user_id, num_recommendations = 20):
         
-        predicted_ratings = self.model.singular_values_
-        user_index = self.interaction_matrix.getrow(user_id)
-        user_ratings = predicted_ratings[user_index]
-        item_indices = np.argsort(user_ratings)[::-1][:num_recommendations]
-        
-        recommendations = self.interaction_matrix.columns[item_indices]
+        user_predictions = self.predicted_matrix[user_index, :]
     
-        recommendations.sort(key=lambda x: x[1], reverse=True)
-        recommendations = recommendations[:num_recommendations]   
+        #Recursively find and select the indices of the top N items (highest predicted ratings)
+        top_ratings = user_predictions[top_n_items]
+        recommendations = list(zip(decoded_categories, top_n_ratings))
+        
 
         #Adds ISBN and returns recommendation dataframe 
-        recommendations = pd.DataFrame(recommendations)
-        recommendations = pd.concat([recommendations, pd.DataFrame(books_ID_list['ISBN'])], join = 'inner', axis = 1)
-        recommendations = recommendations.rename(columns = {0 : "Book-Title", 1: "Rating"})
+        #recommendations = pd.DataFrame(recommendations)
+        #recommendations = pd.concat([recommendations, pd.DataFrame(books_ID_list['ISBN'])], join = 'inner', axis = 1)
+        #recommendations = recommendations.rename(columns = {0 : "Book-Title"})
         return recommendations
 
     #For users with no previous data, recommend a random list of books by taking a proportion of books within each rating range
@@ -114,7 +129,7 @@ recommender.fit()
 
 a = recommender.recommend(0)
 
-print(a['Rating'])
+print(a['Book-Title'])
 
 # This is the new stuff
 
@@ -129,7 +144,6 @@ test_matrix = interaction_matrix.copy()
 
 for index in test_indices:
     train_matrix[non_zero_indices[index][0], non_zero_indices[index][1]] = 0
-
 
 # Run SVD Algorithm
 svd = TruncatedSVD(n_components=2)  
