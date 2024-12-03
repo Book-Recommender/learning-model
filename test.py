@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import TruncatedSVD
-from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
 from scipy.sparse import csr_matrix
 
 user_data = pd.read_csv("data/Users.csv")
@@ -116,11 +116,7 @@ a = recommender.recommend(0)
 
 print(a['Rating'])
 
-# New is the new code
-
-
 # This is the new stuff
-from sklearn.model_selection import train_test_split
 
 # Flatten sparse matrix to 1d array in order to split data into training and testing sets more comprehensively
 non_zero_indices = np.transpose(interaction_matrix.nonzero()) 
@@ -135,8 +131,8 @@ for index in test_indices:
     train_matrix[non_zero_indices[index][0], non_zero_indices[index][1]] = 0
 
 
- # Run SVD Algorithm
-svd = TruncatedSVD(n_components=2, random_state=42)  
+# Run SVD Algorithm
+svd = TruncatedSVD(n_components=2)  
 user_factors = svd.fit_transform(train_matrix)
 item_factors = svd.components_
 
@@ -151,11 +147,6 @@ for index in test_indices:
     user_idx, item_idx = non_zero_indices[index]
     test_ratings.append(interaction_matrix[user_idx, item_idx])
     predicted_ratings.append(predicted_matrix[user_idx, item_idx])
-
-# Compute RMSE
-rmse = np.sqrt(mean_squared_error(test_ratings, predicted_ratings))
-print(f"\nRoot Mean Squared Error (RMSE): {rmse:.4f}")
-
 
 def get_top_n_recommendations(predicted_matrix, user_index, top_n=3):
     
