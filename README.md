@@ -2,10 +2,10 @@
 
 ## Dependencies List and Versions:
 
-### Numpy version 1.26.4
+### Numpy 1.26.4
 
-### Pandas version 2.2.3
+### Pandas 2.2.3
 
-### Scikit-Learn version 1.5.2
+### Scikit-Learn 1.5.2
 
-### Scipy version 1.14.1
+### Scipy 1.14.1
