@@ -24,8 +24,6 @@ class RecommenderPipeline:
         self.user_rating = user_rating_books_ds
         self.model = TruncatedSVD(n_components=2)
         self.non_zero_indices = None
-        self.train_matrix = None
-        self.predicted_ratings = None
         
         # Encode users and books
         user_encoder = LabelEncoder()
@@ -47,28 +45,18 @@ class RecommenderPipeline:
         ratings = interaction_matrix[non_zero_indices[:, 0], non_zero_indices[:, 1]].A1  
         train_indices, test_indices = train_test_split(range(len(ratings)), test_size=0.2, random_state=42)
         
-        self.train_matrix = interaction_matrix.copy()
-        test_matrix = interaction_matrix.copy()
+        train_matrix = interaction_matrix.copy()
 
         for index in self.test_indices:
-            self.train_matrix[self.non_zero_indices[index][0], self.non_zero_indices[index][1]] = 0
+            train_matrix[self.non_zero_indices[index][0], self.non_zero_indices[index][1]] = 0
             
-        user_factors = self.model.fit_transform(self.train_matrix)
+        user_factors = self.model.fit_transform(train_matrix)
         item_factors = self.model.components_
 
         predicted_matrix = np.dot(user_factors, item_factors)
-        
-        # Collect test ratings and predictions
-        test_ratings = []
-        self.predicted_ratings = []
-
-        for index in test_indices:
-            user_idx, item_idx = self.non_zero_indices[index]
-            test_ratings.append(self.interaction_matrix[user_idx, item_idx])
-            predicted_ratings.append(self.predicted_matrix[user_idx, item_idx])
 
     #This function creates num_recommendations recommendations for a given user 
-    def recommend(self,user_id, num_recommendations = 20):
+    def recommend(self,user_index, num_recommendations = 20):
         
         user_predictions = self.predicted_matrix[user_index, :]
     
