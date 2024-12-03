@@ -21,19 +21,20 @@ average_ratings = pd.read_csv("./data/average_ratings.csv.gz", delimiter = '\t',
 class RecommenderPipeline:
     #Encodes data and creates user-item matrix
     def __init__(self):
-        self.user_rating = user_rating_books_ds
         self.model = TruncatedSVD(n_components=2)
-        self.non_zero_indices = None
+        self.predicted_matrix = None
+        self.iteraction_matrix = None
         
         # Encode users and books
+        user_rating = user_rating_books_ds
         user_encoder = LabelEncoder()
         book_encoder = LabelEncoder()
         
-        self.user_rating.loc[:, "User-ID"] = user_encoder.fit_transform(self.user_rating["User-ID"]).astype(np.int32)
-        self.user_rating.loc[:, "Book-Title"] = book_encoder.fit_transform(self.user_rating["Book-Title"]).astype(np.int32)
-        self.user_rating.loc[:, "Book-Rating"] = self.user_rating["Book-Rating"].astype(np.int8)
+        user_rating.loc[:, "User-ID"] = user_encoder.fit_transform(user_rating["User-ID"]).astype(np.int32)
+        user_rating.loc[:, "Book-Title"] = book_encoder.fit_transform(user_rating["Book-Title"]).astype(np.int32)
+        user_rating.loc[:, "Book-Rating"] = user_rating["Book-Rating"].astype(np.int8)
 
-        # Create Title/Rating interaction matrix
+        # Create interaction matrix
         self.interaction_matrix = csr_matrix(
             (user_rating_books_ds["Book-Rating"],
             (user_rating_books_ds["User-ID"], user_rating_books_ds["Book-Title"]))
@@ -41,26 +42,28 @@ class RecommenderPipeline:
         
     #Test/Train splits data and trains model using train data
     def fit(self):
-        self.non_zero_indices = np.transpose(self.interaction_matrix.nonzero()) 
-        ratings = interaction_matrix[non_zero_indices[:, 0], non_zero_indices[:, 1]].A1  
+        non_zero_indices = np.transpose(self.interaction_matrix.nonzero()) 
+        ratings = self.interaction_matrix[non_zero_indices[:, 0], non_zero_indices[:, 1]].A1  
         train_indices, test_indices = train_test_split(range(len(ratings)), test_size=0.2, random_state=42)
         
-        train_matrix = interaction_matrix.copy()
+        train_matrix = self.interaction_matrix.copy()
 
-        for index in self.test_indices:
-            train_matrix[self.non_zero_indices[index][0], self.non_zero_indices[index][1]] = 0
+        for index in test_indices:
+            train_matrix[non_zero_indices[index][0], non_zero_indices[index][1]] = 0
             
         user_factors = self.model.fit_transform(train_matrix)
         item_factors = self.model.components_
 
-        predicted_matrix = np.dot(user_factors, item_factors)
+        self.predicted_matrix = np.dot(user_factors, item_factors)
 
     #This function creates num_recommendations recommendations for a given user 
-    def recommend(self,user_index, num_recommendations = 20):
+    def recommend(self, user_index, num_recommendations = 20):
         
         user_predictions = self.predicted_matrix[user_index, :]
     
         #Recursively find and select the indices of the top N items (highest predicted ratings)
+        top_n_items = np.argsort(user_predictions)[::-1][:top_n]
+        decoded_categories = book_encoder.inverse_transform(top_n_items)
         top_ratings = user_predictions[top_n_items]
         recommendations = list(zip(decoded_categories, top_n_ratings))
         
@@ -115,61 +118,62 @@ class RecommenderPipeline:
 recommender = RecommenderPipeline()
 recommender.fit()
 
-a = recommender.recommend(0)
+a = recommender.recommend(10871)
 
-print(a['Book-Title'])
+print(a)
 
-# This is the new stuff
+# # This is the new stuff
 
-# Flatten sparse matrix to 1d array in order to split data into training and testing sets more comprehensively
-non_zero_indices = np.transpose(interaction_matrix.nonzero()) 
-ratings = interaction_matrix[non_zero_indices[:, 0], non_zero_indices[:, 1]].A1  
+# # Flatten sparse matrix to 1d array in order to split data into training and testing sets more comprehensively
+# non_zero_indices = np.transpose(interaction_matrix.nonzero()) 
+# ratings = interaction_matrix[non_zero_indices[:, 0], non_zero_indices[:, 1]].A1  
 
-train_indices, test_indices = train_test_split(range(len(ratings)), test_size=0.2, random_state=42)
+# train_indices, test_indices = train_test_split(range(len(ratings)), test_size=0.2, random_state=42)
 
-train_matrix = interaction_matrix.copy()
-test_matrix = interaction_matrix.copy()
+# train_matrix = interaction_matrix.copy()
+# test_matrix = interaction_matrix.copy()
 
-for index in test_indices:
-    train_matrix[non_zero_indices[index][0], non_zero_indices[index][1]] = 0
+# for index in test_indices:
+#     train_matrix[non_zero_indices[index][0], non_zero_indices[index][1]] = 0
 
-# Run SVD Algorithm
-svd = TruncatedSVD(n_components=2)  
-user_factors = svd.fit_transform(train_matrix)
-item_factors = svd.components_
+# # Run SVD Algorithm
+# svd = TruncatedSVD(n_components=2)  
+# user_factors = svd.fit_transform(train_matrix)
+# item_factors = svd.components_
 
-predicted_matrix = np.dot(user_factors, item_factors)
+# predicted_matrix = np.dot(user_factors, item_factors)
 
 
-# Collect test ratings and predictions
-test_ratings = []
-predicted_ratings = []
+# # Collect test ratings and predictions
+# test_ratings = []
+# predicted_ratings = []
 
-for index in test_indices:
-    user_idx, item_idx = non_zero_indices[index]
-    test_ratings.append(interaction_matrix[user_idx, item_idx])
-    predicted_ratings.append(predicted_matrix[user_idx, item_idx])
+# for index in test_indices:
+#     user_idx, item_idx = non_zero_indices[index]
+#     test_ratings.append(interaction_matrix[user_idx, item_idx])
+#     predicted_ratings.append(predicted_matrix[user_idx, item_idx])
 
-def get_top_n_recommendations(predicted_matrix, user_index, top_n=3):
+# def get_top_n_recommendations(predicted_matrix, user_index, top_n=3):
     
     
-    # Get the predicted ratings for the user (user_index)
-    user_predictions = predicted_matrix[user_index, :]
+#     # Get the predicted ratings for the user (user_index)
+#     user_predictions = predicted_matrix[user_index, :]
     
-    # Recursively find and select the indices of the top N items (highest predicted ratings)
-    top_n_ratings = user_predictions[top_n_items]
-    top_n_recommendations = list(zip(decoded_categories, top_n_ratings))
-    return top_n_recommendations
+#     # Recursively find and select the indices of the top N items (highest predicted ratings)
+    
+#     top_n_ratings = user_predictions[top_n_items]
+#     top_n_recommendations = list(zip(decoded_categories, top_n_ratings))
+#     return top_n_recommendations
 
-# Example: Get the top 3 recommended items for User 1 (user_index=0)
-user_index = 10871  # User 1
-top_n_recommendations = get_top_n_recommendations(predicted_matrix, user_index, top_n=3)
+# # Example: Get the top 3 recommended items for User 1 (user_index=0)
+# user_index = 10871  # User 1
+# top_n_recommendations = get_top_n_recommendations(predicted_matrix, user_index, top_n=3)
 
-print(f"Top 3 recommended items for User {user_index}: {top_n_recommendations}")
+# print(f"Top 3 recommended items for User {user_index}: {top_n_recommendations}")
 
 
-# Here is the missing code
-# add before top_n_ratings
-  # Recursively find and select the indices of the top N items (highest predicted ratings)
-    top_n_items = np.argsort(user_predictions)[::-1][:top_n]
-    decoded_categories = book_encoder.inverse_transform(top_n_items)
+# # Here is the missing code
+# # add before top_n_ratings
+#   # Recursively find and select the indices of the top N items (highest predicted ratings)
+#     #top_n_items = np.argsort(user_predictions)[::-1][:top_n]
+#     #decoded_categories = book_encoder.inverse_transform(top_n_items)
