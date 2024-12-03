@@ -166,3 +166,10 @@ user_index = 10871  # User 1
 top_n_recommendations = get_top_n_recommendations(predicted_matrix, user_index, top_n=3)
 
 print(f"Top 3 recommended items for User {user_index}: {top_n_recommendations}")
+
+
+# Here is the missing code
+# add before top_n_ratings
+  # Recursively find and select the indices of the top N items (highest predicted ratings)
+    top_n_items = np.argsort(user_predictions)[::-1][:top_n]
+    decoded_categories = book_encoder.inverse_transform(top_n_items)
