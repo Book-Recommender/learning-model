@@ -48,7 +48,7 @@ class RecommenderPipeline:
         ratings = self.interaction_matrix[non_zero_indices[:, 0], non_zero_indices[:, 1]].A1  
         train_indices, test_indices = train_test_split(range(len(ratings)), test_size=0.2, random_state=42)
         
-        train_matrix = self.interaction_matrix.copy()
+        train_matrix = self.interaction_matrix
 
         for index in test_indices:
             train_matrix[non_zero_indices[index][0], non_zero_indices[index][1]] = 0
@@ -60,9 +60,9 @@ class RecommenderPipeline:
 
     #This function creates num_recommendations recommendations for a given user 
     def recommend(self, user_index, num_recommendations = 20):
-        
+
         user_predictions = self.predicted_matrix[user_index, :]
-    
+
         #Recursively find and select the indices of the top N items (highest predicted ratings)
         top_n_items = np.argsort(user_predictions)[::-1][:num_recommendations]
         decoded_categories = self.book_encoder.inverse_transform(top_n_items)
@@ -127,7 +127,7 @@ def book_recommendation(user_index, num_recommendations = 20):
     recommender.fit()
     
     #Checks if user has a previous rating history, and if so, recommends using SVD()
-    if user_rating_books_ds[user_rating_books_ds['User-ID'] == user_index].empty:
+    if not user_rating_books_ds[user_rating_books_ds['User-ID'] == user_index].empty:
         return recommender.recommend(user_index, num_recommendations)
     
     #If no previous rating history, recommend using a proprotional random list
