@@ -118,6 +118,19 @@ class RecommenderPipeline:
         final_df = final_df.reset_index(drop=True)
         final_df = final_df.drop(columns = {'Rating'})
         return final_df
-    
+
 
 #15996 is the largest valid user_index
+#Creations pipeline model object, fits it, and recommends books
+def book_recommendation(user_index, num_recommendations = 20):
+    recommender = RecommenderPipeline()
+    recommender.fit()
+    
+    #Checks if user has a previous rating history, and if so, recommends using SVD()
+    if user_rating_books_ds[user_rating_books_ds['User-ID'] == user_index].empty:
+        return recommender.recommend(user_index, num_recommendations)
+    
+    #If no previous rating history, recommend using a proprotional random list
+    else:
+        return recommender.cold_recommend(num_recommendations)
+        
