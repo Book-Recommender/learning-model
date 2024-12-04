@@ -63,7 +63,10 @@ class RecommenderPipeline:
 
     #This function creates num_recommendations recommendations for a given user 
     def recommend(self, user_index, num_recommendations = 20):
-
+        #Checking to see if there is no existing data
+        if not self.rating_list:
+            return self.cold_recommend(num_recommendations)
+        
         user_predictions = self.predicted_matrix[user_index, :]
 
         #Recursively find and select the indices of the top N items (highest predicted ratings)
@@ -125,24 +128,17 @@ class RecommenderPipeline:
 #Updates book list with list of books and ratings and respective user ID from the backend
 def update_ds(user_id, book_list, rating_list, user_rating):
     temp_df = pd.DataFrame()
-    temp_df['User-ID'] = user_id
     temp_df['Book-Title'] = book_list
+    temp_df['User-ID'] = user_id
     temp_df['Book-Rating'] = rating_list
     
     temp_df = pd.concat([user_rating, temp_df], axis = 0)
     return temp_df
 
-#15996 is the largest valid user_index
 #Creations pipeline model object, fits it, and recommends books
-def book_recommendation(user_index, num_recommendations = 20):
-    recommender = RecommenderPipeline()
+def book_recommendation(user_id, book_list, rating_list, num_recommendations = 20):
+    recommender = RecommenderPipeline(user_id, book_list, rating_list)
     recommender.fit()
-    
-    #Checks if user has a previous rating history, and if so, recommends using SVD()
-    if not user_rating_books_ds[user_rating_books_ds['User-ID'] == user_index].empty:
-        return recommender.recommend(user_index, num_recommendations)
-    
-    #If no previous rating history, recommend using a proprotional random list
-    else:
-        return recommender.cold_recommend(num_recommendations)
+
+    return recommender.cold_recommend(num_recommendations)
         
