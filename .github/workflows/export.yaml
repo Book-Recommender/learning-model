@@ -1,0 +1,39 @@
+---
+name: Export Model
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+  pull_request:
+
+env:
+  R2_BUCKET: bookclub
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@e779db74266a80753577425b0f4ee823649f251d  # v3.2.3
+        with:
+          version: "0.5.4"
+          enable-cache: true
+          cache-dependency-glob: "export.py"
+
+      - name: Run export script
+        run: |
+          uv run export.py
+
+      - name: Upload model to Cloudflare bucket
+        uses: cloudflare/wrangler-action@05f17c4a695b4d94b57b59997562c6a4624c64e4  # v3.12.1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: r2 object put ${{ env.R2_BUCKET }}/model.onnx --file model.onnx
+
